@@ -17,6 +17,7 @@ ReportId={{$Report->id_bi_report}};
 <script src="../Javascript/paperfold.min.js"></script>
 <script src="../Javascript/jquery.dataTables.min.js"></script>
 <script src="../Javascript/daterangepicker.js"></script>
+<script src="../Javascript/numeral.js"></script>
 <script src="../Javascript/ConfigureReport.js"></script>
 @endsection
 
@@ -31,23 +32,24 @@ ReportId={{$Report->id_bi_report}};
         <h1>{{$Report->name}}</h1>
     </div>
     <div id="rpt_options" class="rpt_paper">
-      <div style="display:table;width:100%;padding-top:20px">
-        <div style="display:table-row">
-          <div id="header-left" style="display:table-cell"></div>
-          <div id="header-right" style="display:table-cell"></div>
-        </div>
-      </div>
       <div style="float: clear;"></div>
       @if($HasFilter)
         <div id="openFilterOptions" style="float:right;padding-top:16px;padding-bottom:16px">
           <img width="18" height="18" src="../images/filters.png"></img>
         </div>
         <div style="float: clear;"></div>
-        <div id="showFilters" style="padding-top:20px;display:none"></div>
+        <div id="showFilters" style="padding-top:20px;display:none" class="panel"></div>
       @endif
     </div>
-    <div id="rpt_Table" class="rpt_Paper">
-      <table id="reporttable">
+    <div id="rpt_Table" class="panel panel-default">
+      <div style="display:table;width:100%;padding-top:20px" class="panel-heading">
+
+        <div style="display:table-row">
+          <div id="header-left" style="display:table-cell"></div>
+          <div id="header-right" style="display:table-cell"></div>
+        </div>
+      </div>
+      <table id="reporttable" class="table">
         <thead id="reporthead"></thead>
           <tbody></tbody>
       </table>

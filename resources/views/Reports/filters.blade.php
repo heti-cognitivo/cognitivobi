@@ -17,9 +17,9 @@
     @endif
   </div>
   @endforeach
-  <div style="text-align:center">
-    <input type="button" id="btnFilter" value="Filter"/>
-    <input type="button" id="btnClearFilter" value="Clear"/>
+  <div>
+    <input type="button" id="btnFilter" style="margin-bottom:5px;margin-top:5px" class="btn btn-success" value="Filter"/>
+    <input type="button" id="btnClearFilter" style="margin-bottom:5px;margin-top:5px" class="btn btn-success" value="Clear"/>
   </div>
 </div>
 @show

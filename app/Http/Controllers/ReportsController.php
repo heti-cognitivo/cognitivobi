@@ -116,6 +116,7 @@ class ReportsController extends Controller
         $GrpCnt = 0;
         $AggCnt = 0;
         $HeaderCnt = 0;
+        $ColumnFormats = array();
         $MaxGroupLevel = $Report->Bi_Report_Details()->get()->max("group");
         foreach ($Report->Bi_Report_Details()->get() as $Detail) {
           if(!is_null($Detail->display_column)){
@@ -154,13 +155,17 @@ class ReportsController extends Controller
             $Headers[$HeaderCnt]["value"] = $Data[0]->$dbColumn;
             $HeaderCnt++;
           }
+          if(DataTypes::getLabel($Detail->format_column)=="CURRENCY"){
+            $ColumnFormats[$ColName] = "CURRENCY";
+          }
         }
         $Response = array('data'=>$Data,
                         'columns'=>$Columns,
                         'grouping'=>$ColumnGroup,
                         'aggregates'=>$Aggregates,
                         'maxgrouplevel'=>$MaxGroupLevel,
-                        'headers'=>$Headers);
+                        'headers'=>$Headers,
+                        'formats'=>$ColumnFormats);
         return Response::json($Response);
     }
     public function GetFilters()

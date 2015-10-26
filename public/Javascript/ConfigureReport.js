@@ -26,8 +26,9 @@
 				           ShowGrouping(this);
 								 if(ConfigVars.aggregates)
 		 								sumGroups(this);
-								if(ConfigVars.headers)
+								 if(ConfigVars.headers)
 										PopulateHeaders();
+									FormatColumns();
 				       }
 						});
 	    },
@@ -131,11 +132,11 @@
 		if(ConfigVars.headers && ConfigVars.headers.length > 0){
 			for(var i=0;i<ConfigVars.headers.length;i++){
 				if(i%2==0)
-					$("#header-left").html("<label>" + ConfigVars.headers[i].name +
-																": </label><label>" + ConfigVars.headers[i].value + "</label>");
+					$("#header-left").html("<h4>" + ConfigVars.headers[i].name +
+																": </h4><h4>" + ConfigVars.headers[i].value + "</h4>");
 				else(i%2==1)
-					$("#header-right").html("<label>" + ConfigVars.headers[i].name +
-																": </label><label>" + ConfigVars.headers[i].value + "</label>");
+					$("#header-right").html("<h4>" + ConfigVars.headers[i].name +
+																": </h4><h4>" + ConfigVars.headers[i].value + "</h4>");
 			}
 		}
 	}
@@ -245,5 +246,37 @@
 					}
 				});
 		}
+	}
+	function FormatColumns(){
+		numeral.language('fr', {
+		    delimiters: {
+		        thousands: ' ',
+		        decimal: ','
+		    },
+		    abbreviations: {
+		        thousand: 'k',
+		        million: 'm',
+		        billion: 'b',
+		        trillion: 't'
+		    },
+		    ordinal : function (number) {
+		        return number === 1 ? 'er' : 'ème';
+		    },
+		    currency: {
+		        symbol: '₲'
+		    }
+		});
+
+		$("#reporttable tbody tr").each(function(index) {
+			$.each(ConfigVars.formats,function(ColName,Format){
+				ColIndex = $('#reporttable th:contains("' + Col.dispname + '")').index();
+				var number = numeral($(this).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html());
+				switch(format){
+					case "CURRENCY":
+						$(this).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html(number.format('$0,0.00'));
+						break;
+				}
+			});
+		});
 	}
 });
