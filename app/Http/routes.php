@@ -20,3 +20,6 @@ Route::post('reports/getdata','ReportsController@GetData');
 Route::post('reports/getfilters','ReportsController@GetFilters');
 Route::post('reports/processfilters','ReportsController@ProcessFilters');
 Route::post('reports/clearfilters','ReportsController@ClearFilters');
+Route::get('auth/login', 'Auth\AuthController@getLogin');
+Route::post('auth/login', 'Auth\AuthController@postLogin');
+Route::get('auth/logout', 'Auth\AuthController@getLogout');

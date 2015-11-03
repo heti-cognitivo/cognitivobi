@@ -1,6 +1,8 @@
 @extends('Reports.master')
 
-@section('title','{{$Report->name}}')
+@section('title')
+{{$Report->name}}
+@endsection
 
 @section('csslinks')
 <link rel="stylesheet" href="../css/default.css">
@@ -20,13 +22,15 @@ ReportId={{$Report->id_bi_report}};
 <script src="../Javascript/numeral.js"></script>
 <script src="../Javascript/ConfigureReport.js"></script>
 @endsection
-
+@section('topbar')
+<ul>
+  <li style="display:inline"><img height="30px" width="30px" src="../images/outlines/search-100.png"</li>
+  <li style="display:inline"><input id='searchbox' type="text"></li>
+</ul>
+@endsection
 @section('content')
   <input type="hidden" id="token" value="{{ csrf_token() }}">
-  <ul>
-    <li><img src="../images/outlines/search-100.png"</li>
-    <li><input id='searchbox' type="text"></li>
-  </ul>
+
   <div id="rpt_Wrapper">
     <div id="rpt_Title" class="rpt_Paper">
         <h1>{{$Report->name}}</h1>

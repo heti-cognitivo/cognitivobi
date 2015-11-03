@@ -4,14 +4,15 @@
         <meta name="description" content="@yield('title')">
     		<meta name="author" content="core team @ Cognitivo">
         @section('favicon')
-        <link href="../public/images/favicon.ico" rel="icon" type="image/x-icon" />
+        <link href="../images/favicon.ico" rel="icon" type="image/x-icon" />
         @show
         @yield('csslinks')
         @yield('jslinks')
     </head>
     <body>
-        @yield('topbar')
-
+        <div id="header">
+          @yield('topbar')
+        </div>
         <div class="contents">
             @yield('content')
         </div>
