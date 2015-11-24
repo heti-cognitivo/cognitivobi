@@ -19,7 +19,8 @@ ReportId={{$Report->id_bi_report}};
 <script src="../Javascript/paperfold.min.js"></script>
 <script src="../Javascript/jquery.dataTables.min.js"></script>
 <script src="../Javascript/daterangepicker.js"></script>
-<script src="../Javascript/numeral.js"></script>
+<script src="../Javascript/moment.min.js"></script>
+<script src="../Javascript/numeral.min.js"></script>
 <script src="../Javascript/ConfigureReport.js"></script>
 @endsection
 @section('topbar')
@@ -38,7 +39,7 @@ ReportId={{$Report->id_bi_report}};
     <div id="rpt_options" class="rpt_paper">
       <div style="float: clear;"></div>
       @if($HasFilter)
-        <div id="openFilterOptions" style="float:right;padding-top:16px;padding-bottom:16px">
+        <div id="openFilterOptions" style="float: right;padding-top: 16px;padding-bottom: 16px;">
           <img width="18" height="18" src="../images/filters.png"></img>
         </div>
         <div style="float: clear;"></div>

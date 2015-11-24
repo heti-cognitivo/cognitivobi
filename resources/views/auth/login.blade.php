@@ -5,25 +5,26 @@
 </head>
 <body>
 
-{{ Form::open(array('url' => 'login')) }}
+{!! Form::open(array('url' => 'auth/login')) !!}
 <h1>Login</h1>
 
 <!-- if there are login errors, show them here -->
 <p>
-    {{ $errors->first('email') }}
-    {{ $errors->first('password') }}
+  @if( ! empty($loginerrors))
+    {{$loginerrors}}
+  @endif
 </p>
 
 <p>
-    {{ Form::label('email', 'Email Address') }}
-    {{ Form::text('email', Input::old('email'), array('placeholder' => 'awesome@awesome.com')) }}
+    {!! Form::label('name', 'Nombre') !!}
+    {!! Form::text('name', Input::old('name'), array('placeholder' => 'awesome')) !!}
 </p>
 
 <p>
-    {{ Form::label('password', 'Password') }}
-    {{ Form::password('password') }}
+    {!! Form::label('password', 'Password') !!}
+    {!! Form::password('password') !!}
 </p>
 
-<p>{{ Form::submit('Submit!') }}</p>
-{{ Form::close() }}
+<p>{!! Form::submit('Submit!') !!}</p>
+{!! Form::close() !!}
 </body>

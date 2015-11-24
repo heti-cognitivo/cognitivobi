@@ -47,17 +47,30 @@
 					filterValue = $(this).children('input:text').val();
 					filter['selector'] = $(this).children('input:text').attr('id');
 					filter['type'] = $(this).children('input:hidden#hdnType').val();
-					if(filter['type'] == 'numeric' || filter['type'] == 'date'){
-						if(filterValue.charAt(0) != ""){
-							filter['operator'] = $.trim(filterValue.charAt(0));
-							filterValue = filterValue.substring(1,filterValue.length);
-						}
-					}
-					if(filter['type'] == 'string'){
-						filter['operator'] = ' like ';
+					switch(filter['type']){
+						case "numeric":
+							if(filterValue.charAt(0) != ""){
+								filter['operator'] = $.trim(filterValue.charAt(0));
+								filterValue = filterValue.substring(1,filterValue.length);
+							}
+							else{
+								filter['operator'] = "=";
+								filterValue = filterValue.substring(1,filterValue.length);
+							}
+							break;
+						case "string":
+							filter['operator'] = ' like ';
+							break;
+						case "date":
+							filter['operator'] = ' between ';
+							filterValue = filterValue.split("-");
+							break;
+						default:
+							break;
 					}
 					filter['value'] = filterValue;
 					jsonFilters.push(filter);
+					console.log(filter);
 				}
 			});
 			$.ajax({
@@ -70,6 +83,7 @@
 				},
 				success:function(Data){
 					Data = JSON.parse(JSON.stringify(Data));
+					console.log(JSON.stringify(Data));
 					dataTable.clear();
 					dataTable.rows.add(Data.data);
 					dataTable.draw();
@@ -94,6 +108,8 @@
 					dataTable.clear();
 					dataTable.rows.add(Data.data);
 					dataTable.draw();
+					$("#showFilters").toggle('slow');
+
 				},
 				error:function(data){
 					var errors = $.parseJSON(JSON.stringify(data.responseText));
@@ -128,7 +144,7 @@
 			}
 	});
 	function PopulateHeaders(){
-		console.log(ConfigVars.headers.length);
+
 		if(ConfigVars.headers && ConfigVars.headers.length > 0){
 			for(var i=0;i<ConfigVars.headers.length;i++){
 				if(i%2==0)
@@ -144,16 +160,44 @@
     var api = table.api();
     var rows = api.rows( {page:'current'} ).nodes();
     var last=null;
+		var GroupName = "";
+		var DispName = null;
+		var DispNameCnt = 0;
 		for(var i=0;i<ConfigVars.grouping.length;i++){
-			var ColIndex = api.column(ConfigVars.grouping[i].dispname + ":name").index();
-			api.columns(ColIndex).visible(false);
+			DispName = ConfigVars.grouping[i].dispname.split(",");
+			var ColIndex;
+			DispNameCnt = 0;
+			if(DispName.length > 1){
+				ColIndex = Array();
+				for(DispNameCnt = 0; DispNameCnt<DispName.length;DispNameCnt++){
+					ColIndex[DispNameCnt] = api.column(DispName[DispNameCnt] + ":name").index();
+					api.columns(ColIndex[DispNameCnt]).visible(false);
+				}
+			}
+			else {
+				ColIndex[DispNameCnt] = api.column(ConfigVars.grouping[i].dispname + ":name").index();
+				api.columns(ColIndex).visible(false);
+			}
+			console.log(ColIndex);
 			var level = ConfigVars.grouping[i].level;
-			api.column(ColIndex, {page:'current'} ).data().each( function ( group, i ) {
+			api.column(ColIndex[0], {page:'current'} ).data().each( function ( group, i ) {
 	      if ( last !== group ) {
+					GroupName = "";
+					if(ColIndex.length > 1){
+						ColIndex.forEach(function(ind){
+							GroupName = GroupName + " " + api.column(ind,{page:'current'}).data()[i];
+						});
 						$(rows).eq( i ).before(
-	                  '<tr class="group'+level+'"><td><p style="text-indent:'+(level * 10)+'px">'
-										+group+'</p></td></tr>'
+	                  '<tr class="group'+level+'"><td colspan="2"><p style="font-weight:700; text-indent:'+(level * 10)+'px">'
+										+GroupName+'</p></td></tr>'
 	              );
+						}
+						else{
+							$(rows).eq( i ).before(
+											'<tr class="group'+level+'"><td colspan="2"><p style="font-weight:700; text-indent:'+(level * 10)+'px">'
+											+group+'</p></td></tr>'
+									);
+						}
 	        last = group;
 	      }
 	    });
@@ -189,32 +233,38 @@
 		var Aggregate = Array();
 		var api = table.api();
 		var ColCount = $('#reporttable').find('thead th').length;
+		var HasRunningTotal = false;
 		ConfigVars.aggregates.forEach(function(Col){
 			ColIndex = $('#reporttable th:contains("' + Col.dispname + '")').index();
-			Aggregate[ColIndex] = 0;
+			Aggregate[ColIndex] = Array();
+			Aggregate[ColIndex]['Result'] = 0;
+			Aggregate[ColIndex]['Type'] = Col.dispname.func
+			if(Col.func == "SUM")
+				HasRunningTotal = true;
 		});
 		for(var level=ConfigVars.maxgrouplevel;level>=0;level--){
-			if(level == 0){
+			if(HasRunningTotal && level == 0){
+				$("#reporttable tbody tr").eq( 0 ).before(
+								'<tr class="runningtotal"><td>Running Total</td></tr>');
 				$("#reporttable tbody tr.group1").each(function(index) {
 					for(var ColIndex in Aggregate){
-						Aggregate[ColIndex] = Aggregate[ColIndex] +
+						Aggregate[ColIndex]['Result'] = Aggregate[ColIndex]['Result'] +
 																		parseFloat($(this).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html());
 					}
 				});
-				$("#reporttable tbody tr").eq( 0 ).before(
-								'<tr class="runningtotal"><td>Running Total</td></tr>');
 				for(var i=1;i<ColCount;i++){
-					if(typeof Aggregate[i] !== "undefined"){
-						$("#reporttable tbody tr").eq( 0 ).append('<td class="rpt_summary" style="text-align:right"> '
-																 + Aggregate[i].toFixed(2) + '</td>');
-					}
+					if(Aggregate.hasOwnProperty(i)){
+					if(typeof Aggregate[i]['Result'] !== "undefined"){
+						$("#reporttable tbody tr:last").after('<td class="rpt_summary" style="text-align:right"> '
+																 + Aggregate[i]['Result'].toFixed(2) + '</td>');
+					}}
 					else {
-						$("#reporttable tbody tr").eq( 0 ).append('<td></td>');
+						$("#reporttable tbody tr:last").after('<td></td>');
 					}
 				}
 				for(var ColIndex in Aggregate){
 					if(Aggregate.hasOwnProperty(ColIndex))
-					Aggregate[ColIndex] = 0;
+					Aggregate[ColIndex]['Result'] = 0;
 				}
 			}
 				$("#reporttable tbody tr.group"+level.toString()).each(function(index) {
@@ -226,31 +276,39 @@
 						var row = $(this);
 						for(var ColIndex in Aggregate){
 							if(Aggregate.hasOwnProperty(ColIndex)){
-							Aggregate[ColIndex] = Aggregate[ColIndex] +
+							Aggregate[ColIndex]['Result'] = Aggregate[ColIndex]['Result'] +
 																			parseFloat($(row).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html());
 							}
 						}
 					});
+
+					var $NewRow = $("<tr class='sum'><td class='rpt_summary tag'>Suma</td>");
 					for(var i=1;i<ColCount;i++){
-						if(typeof Aggregate[i] !== "undefined"){
-							$(this).append('<td class="rpt_summary" style="text-align:right"> '
-						                       + Aggregate[i].toFixed(2) + '</td>');
-						}
+						if(Aggregate.hasOwnProperty(i)){
+						if(typeof Aggregate[i]['Result'] !== "undefined"){
+							$NewRow.append('<td class="rpt_summary" style="text-align:right"> '
+						                       + Aggregate[i]['Result'].toFixed(2) + '</td>');
+						}}
 						else {
-							$(this).append('<td></td>');
+							$NewRow.append('<td class="rpt_summary"></td>');
 						}
 					}
+					$(this).nextUntil('.group'+level.toString()).last().after($NewRow);
 					for(var ColIndex in Aggregate){
 						if(Aggregate.hasOwnProperty(ColIndex))
-						Aggregate[ColIndex] = 0;
+						Aggregate[ColIndex]['Result'] = 0;
 					}
 				});
 		}
 	}
+	function CheckIfRunningTotalExists()
+	{
+
+	}
 	function FormatColumns(){
-		numeral.language('fr', {
+		numeral.language('es', {
 		    delimiters: {
-		        thousands: ' ',
+		        thousands: '.',
 		        decimal: ','
 		    },
 		    abbreviations: {
@@ -266,14 +324,16 @@
 		        symbol: '₲'
 		    }
 		});
-
+		numeral.language('es');
 		$("#reporttable tbody tr").each(function(index) {
+			var row = $(this);
 			$.each(ConfigVars.formats,function(ColName,Format){
-				ColIndex = $('#reporttable th:contains("' + Col.dispname + '")').index();
-				var number = numeral($(this).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html());
-				switch(format){
+				ColIndex = $('#reporttable th:contains("' + ColName + '")').index();
+
+				var number = numeral($(row).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html());
+				switch(Format){
 					case "CURRENCY":
-						$(this).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html(number.format('$0,0.00'));
+						$(row).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html(number.format('$0,0.00'));
 						break;
 				}
 			});

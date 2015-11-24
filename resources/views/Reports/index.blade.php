@@ -2,26 +2,14 @@
 
 @section('csslinks')
 <link rel="stylesheet" href="../public/css/default.css">
+<link rel="stylesheet" href="../public/css/modal.css">
 @endsection
 
 @section('jslinks')
 <script src="../public/Javascript/jquery.min.2.1.3.js"></script>
+<script src="../public/Javascript/modal.js"></script>
+<script src="../public/Javascript/modernizr.js"></script>
 <script type="text/javascript">
-  document.onkeydown = ShowKeyCode;
-  function ShowKeyCode(evt) {
-    document.getElementById('search').style.display = 'block'
-    document.getElementById('tbxSearch').focus();
-  }
-</script>
-<script type="text/javascript">
-  function open_inTab() {
-    if (document.getElementsByClassName("cmn-toggle cmn-toggle-round-flat").checked == true) {
-      document.getElementById("rpt_link").target = "_blank";
-    } else {
-      document.getElementById("rpt_link").target = "_self";
-    }
-  }
-
 </script>
 @endsection
 
@@ -34,14 +22,44 @@
 
 @section('content')
   @foreach ($reports as $report)
-  <a id="rpt_link" href="" target="_blank">
+  <a id="rpt_link" href="#">
     <div class="report_thumbnail">
       <div class="rpt_List">
         <li class="rpt_li" data-icon="g"/>
       </div>
+      <!--<a id="showFilters"><h4>{{$report->name}}'</h4></a>-->
       <a href="{{ route('reports.show', [$report->id_bi_report]) }}"><h4>{{$report->name}}'</h4></a>
-      <p>Información de Contacto</p>
     </div>
   </a>
   @endforeach
 @endsection
+<div class="cd-user-modal"> <!-- this is the entire modal form, including the background -->
+  <div class="cd-user-modal-container"> <!-- this is the container wrapper -->
+    <div id="cd-filters" class="is-selected"> <!-- log in form -->
+      <form class="cd-form">
+        <p class="fieldset">
+          <label class="image-replace cd-email" for="signin-email">E-mail</label>
+          <input class="full-width has-padding has-border" id="signin-email" type="email" placeholder="E-mail">
+          <span class="cd-error-message">Error message here!</span>
+        </p>
+
+        <p class="fieldset">
+          <label class="image-replace cd-password" for="signin-password">Password</label>
+          <input class="full-width has-padding has-border" id="signin-password" type="text" placeholder="Password">
+          <a href="#0" class="hide-password">Hide</a>
+          <span class="cd-error-message">Error message here!</span>
+        </p>
+
+        <p class="fieldset">
+          <input type="checkbox" id="remember-me" checked="">
+          <label for="remember-me">Remember me</label>
+        </p>
+
+        <p class="fieldset">
+          <input class="full-width" type="submit" value="Login">
+        </p>
+      </form>
+    </div> <!-- cd-login -->
+    <a href="#0" class="cd-close-form">Close</a>
+  </div> <!-- cd-user-modal-container -->
+</div>

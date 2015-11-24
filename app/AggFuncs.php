@@ -1,11 +1,9 @@
 <?php
 namespace App;
-class DataTypes implements Enum
+class AggFuncs implements Enum
 {
-    const TEXT            = 0;
-    const NUMERIC         = 1;
-    const DATE            = 2;
-    const CURRENCY        = 3;
+    const SUM            = 1;
+    const SUMWORUNNINGTOTAL         = 2;
 
     public static function getCode($label)
     {
@@ -23,8 +21,4 @@ class DataTypes implements Enum
     }
 }
 
-interface Enum {
-	public static function getCode($label);
-	public static function getLabel($code);
-}
 ?>

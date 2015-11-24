@@ -10,8 +10,11 @@ use Response;
 use View;
 use App\Bi_Report;
 use App\DataTypes;
+use App\AggFuncs;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use PHPSQLParser\PHPSQLParser;
+
 
 class ReportsController extends Controller
 {
@@ -117,7 +120,8 @@ class ReportsController extends Controller
         $AggCnt = 0;
         $HeaderCnt = 0;
         $ColumnFormats = array();
-        $MaxGroupLevel = $Report->Bi_Report_Details()->get()->max("group");
+        $DotPos = 0;
+        $MaxGroupLevel = $Report->Bi_Report_Details()->get()->max("group_level");
         foreach ($Report->Bi_Report_Details()->get() as $Detail) {
           if(!is_null($Detail->display_column)){
             $ColName = $Detail->display_column;
@@ -126,7 +130,7 @@ class ReportsController extends Controller
             $ColName = $Detail->name_column;
           }
           $Columns [$ColumnCnt] ["name"] = $ColName;
-          if (DataTypes::getLabel($Detail->format_column) == "NUMERIC") {
+          if (DataTypes::getLabel($Detail->format_column) == "NUMERIC" || DataTypes::getLabel($Detail->format_column) == "CURRENCY") {
   					$Columns [$ColumnCnt] ["className"] = "dt-right";
   					$Columns [$ColumnCnt] ["type"] = "num-html";
   				} else {
@@ -134,19 +138,33 @@ class ReportsController extends Controller
   					$Columns [$ColumnCnt] ["type"] = "string";
   				}
           $Columns [$ColumnCnt] ["targets"] = $ColumnCnt;
-          $Columns [$ColumnCnt] ["data"] = $Detail->name_column;
+          $DotPos = strpos($Detail->name_column,".");
+          $Columns [$ColumnCnt] ["data"] = substr($Detail->name_column,$DotPos ? $DotPos + 1 : 0,strlen($Detail->name_column));
           if(!is_null($Detail->is_output)){
             $Columns [$ColumnCnt] ["visible"] = $Detail->is_output;
           }
           $ColumnCnt++;
-          if(!is_null($Detail->group)){
-            $ColumnGroup[$GrpCnt]["dispname"] = $ColName;
-            $ColumnGroup[$GrpCnt]["level"] = $Detail->group;
+          if(!is_null($Detail->group_level)){
+            $ConcatCol = null;
+            if(!ReportsController::IsLevelProcessed($ColumnGroup,$Detail->group_level)){
+                $ConcatCol = ReportsController::HasConcat($Report,$Detail->group_level);
+                if(!is_null($ConcatCol)){
+                  $ColumnGroup[$GrpCnt]["dispname"] = "";
+                  foreach ($ConcatCol as $Col) {
+                  $ColumnGroup[$GrpCnt]["dispname"] = $ColumnGroup[$GrpCnt]["dispname"] . "," . $Col->display_column;
+                  }
+                  $ColumnGroup[$GrpCnt]["dispname"] = ltrim($ColumnGroup[$GrpCnt]["dispname"],",");
+                }
+                else{
+                  $ColumnGroup[$GrpCnt]["dispname"] = $ColName;
+                }
+            $ColumnGroup[$GrpCnt]["level"] = $Detail->group_level;
             $GrpCnt++;
+            }
           }
           if(!is_null($Detail->aggregate_by)){
             $Aggregates[$AggCnt]["dispname"] = $ColName;
-            $Aggregates[$AggCnt]["func"] = $Detail->aggregate_by;
+            $Aggregates[$AggCnt]["func"] = AggFuncs::getLabel($Detail->aggregate_by);
             $AggCnt++;
           }
           if(!is_null($Detail->is_header) && $Detail->is_header){
@@ -167,6 +185,25 @@ class ReportsController extends Controller
                         'headers'=>$Headers,
                         'formats'=>$ColumnFormats);
         return Response::json($Response);
+    }
+    private function IsLevelProcessed($Grouping,$level){
+      foreach ($Grouping as $Group) {
+        if($Group['level'] == $level){
+          return true;
+        }
+        else{
+          return false;
+        }
+      }
+    }
+    private function HasConcat($Report,$level){
+      $ConcatCol = $Report->Bi_Report_Details()->whereRaw('group_level = ' . $level)->get();
+      if(!is_null($ConcatCol)){
+        return $ConcatCol;
+      }
+      else{
+        return null;
+      }
     }
     public function GetFilters()
     {
@@ -194,16 +231,27 @@ class ReportsController extends Controller
     public function ProcessFilters()
     {
       $WhereClause = "where";
-      $PatternGroup = "/\bgroup by\b/i";
-  		$PatternOrder = "/\border by\b/i";
-  		$PatternWhere = "/\b where \b/i";
+      $PatternGroup = "";
+  		$PatternOrder = "";
       $Report = Bi_Report::find(Input::get('id'));
       $Filters = Input::get('JsnFilters');
       $isConditionFirst=true;
-      if (preg_match ( $PatternWhere, $Report->query )) {
-  			$sWhereClause = "";
-  			$isConditionFirst = false;
-  		}
+      $Parser = new PHPSQLParser();
+      $ParsedQuery = $Parser->parse($Report->query);
+      if(array_key_exists("WHERE",$ParsedQuery))
+        $isConditionFirst = false;
+      else {
+        $isConditionFirst = true;
+      }
+      if(array_key_exists("ORDER",$ParsedQuery))
+        $PatternOrder = "/order by " . $ParsedQuery["ORDER"][0]["base_expr"] . "/i";
+      else
+        $PatternOrder = "/---/";
+      if(array_key_exists("GROUP",$ParsedQuery))
+        $PatternGroup = "/group by " . $ParsedQuery["GROUP"][0]["base_expr"] . "/i";
+      else
+        $PatternGroup = "/---/";
+
       foreach($Filters as $Filter){
         switch ($Filter ["type"]) {
           case "string" :
@@ -214,11 +262,15 @@ class ReportsController extends Controller
   					}
   					break;
           case "date" :
-  					$Filter ["value"] = date ( 'Y-m-d', strtotime ( str_replace ( '-', '/', $Filter ["value"] ) ) );
+            for($i=0; $i<count($Filter ["value"]); $i++){
+              $Filter ["value"][$i] = date ( 'Y-m-d', strtotime ( str_replace ( '-', '/', $Filter ["value"][$i] ) ) );
+              $Filter ["value"][$i] = "'" . $Filter ["value"][$i] . "'";
+            }
+            $Filter["value"] = implode(" and ", $Filter["value"]);
   					if (! $isConditionFirst) {
-  						$WhereClause .= " and " . $Filter ["selector"] . $Filter ["operator"] . "'" . $Filter ["value"] . "'";
+  						$WhereClause .= " and " . $Filter ["selector"] . $Filter ["operator"] . $Filter ["value"];
   					} else {
-  						$WhereClause .= " " . $Filter ["selector"] . $Filter ["operator"] . "'" . $Filter ["value"] . "'";
+  						$WhereClause .= " " . $Filter ["selector"] . $Filter ["operator"] . $Filter ["value"];
   					}
   					break;
   				case "numeric" :
@@ -240,7 +292,7 @@ class ReportsController extends Controller
   		}
   		$Query = substr_replace ( $Report->query, $WhereClause . " ", $index, 0 );
       $Data = DB::select(DB::raw($Query));
-      $Response = array("data"=>$Data);
+      $Response = array("data"=>$Data,"query"=>$Query);
       return Response::json($Response);
     }
     public function ClearFilters(){
