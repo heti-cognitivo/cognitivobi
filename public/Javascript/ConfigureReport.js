@@ -22,9 +22,9 @@
 				       paging:false,
 				       order:[[0,'asc']],
 						   drawCallback:function(settings){
-				         if(ConfigVars.grouping)
+				         if(ConfigVars.grouping && ConfigVars.grouping.length>0)
 				           ShowGrouping(this);
-								 if(ConfigVars.aggregates)
+								 if(ConfigVars.aggregates &&ConfigVars.aggregates.length>0)
 		 								sumGroups(this);
 								 if(ConfigVars.headers)
 										PopulateHeaders();
@@ -70,7 +70,6 @@
 					}
 					filter['value'] = filterValue;
 					jsonFilters.push(filter);
-					console.log(filter);
 				}
 			});
 			$.ajax({
@@ -83,7 +82,7 @@
 				},
 				success:function(Data){
 					Data = JSON.parse(JSON.stringify(Data));
-					console.log(JSON.stringify(Data));
+					dataTable = $('#reporttable').DataTable();
 					dataTable.clear();
 					dataTable.rows.add(Data.data);
 					dataTable.draw();
@@ -165,10 +164,9 @@
 		var DispNameCnt = 0;
 		for(var i=0;i<ConfigVars.grouping.length;i++){
 			DispName = ConfigVars.grouping[i].dispname.split(",");
-			var ColIndex;
+			var ColIndex = Array();
 			DispNameCnt = 0;
 			if(DispName.length > 1){
-				ColIndex = Array();
 				for(DispNameCnt = 0; DispNameCnt<DispName.length;DispNameCnt++){
 					ColIndex[DispNameCnt] = api.column(DispName[DispNameCnt] + ":name").index();
 					api.columns(ColIndex[DispNameCnt]).visible(false);
@@ -178,7 +176,6 @@
 				ColIndex[DispNameCnt] = api.column(ConfigVars.grouping[i].dispname + ":name").index();
 				api.columns(ColIndex).visible(false);
 			}
-			console.log(ColIndex);
 			var level = ConfigVars.grouping[i].level;
 			api.column(ColIndex[0], {page:'current'} ).data().each( function ( group, i ) {
 	      if ( last !== group ) {
@@ -238,28 +235,32 @@
 			ColIndex = $('#reporttable th:contains("' + Col.dispname + '")').index();
 			Aggregate[ColIndex] = Array();
 			Aggregate[ColIndex]['Result'] = 0;
-			Aggregate[ColIndex]['Type'] = Col.dispname.func
+			Aggregate[ColIndex]['Type'] = Col.func
 			if(Col.func == "SUM")
 				HasRunningTotal = true;
 		});
+		if(ConfigVars.grouping.length >0){
 		for(var level=ConfigVars.maxgrouplevel;level>=0;level--){
 			if(HasRunningTotal && level == 0){
-				$("#reporttable tbody tr").eq( 0 ).before(
-								'<tr class="runningtotal"><td>Running Total</td></tr>');
 				$("#reporttable tbody tr.group1").each(function(index) {
+					var row = $(this).nextUntil('.group1').last();
 					for(var ColIndex in Aggregate){
-						Aggregate[ColIndex]['Result'] = Aggregate[ColIndex]['Result'] +
-																		parseFloat($(this).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html());
+						if(!isNaN($(row).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html())){
+							Aggregate[ColIndex]['Result'] = Aggregate[ColIndex]['Result'] +
+																			parseFloat($(row).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html());
+						}
 					}
 				});
-				for(var i=1;i<ColCount;i++){
-					if(Aggregate.hasOwnProperty(i)){
-					if(typeof Aggregate[i]['Result'] !== "undefined"){
-						$("#reporttable tbody tr:last").after('<td class="rpt_summary" style="text-align:right"> '
-																 + Aggregate[i]['Result'].toFixed(2) + '</td>');
+				$("#reporttable tbody tr:last").eq( 0 ).after(
+								'<tr class="runningtotal"><td>Running Total</td></tr>');
+				for(var i=2;i<=ColCount;i++){
+					if(Aggregate.hasOwnProperty(i-1)){
+					if(typeof Aggregate[i-1] !== "undefined"){
+						$("#reporttable tbody tr:last").append('<td class="rpt_summary" style="text-align:right"> '
+																 + Aggregate[i-1]['Result'].toFixed(2) + '</td>');
 					}}
 					else {
-						$("#reporttable tbody tr:last").after('<td></td>');
+						$("#reporttable tbody tr:last").append('<td></td>');
 					}
 				}
 				for(var ColIndex in Aggregate){
@@ -283,27 +284,54 @@
 					});
 
 					var $NewRow = $("<tr class='sum'><td class='rpt_summary tag'>Suma</td>");
-					for(var i=1;i<ColCount;i++){
-						if(Aggregate.hasOwnProperty(i)){
-						if(typeof Aggregate[i]['Result'] !== "undefined"){
+					for(var i=2;i<=ColCount;i++){
+						if(Aggregate.hasOwnProperty(i-1)){
+						if(typeof Aggregate[i-1]!== "undefined"){
 							$NewRow.append('<td class="rpt_summary" style="text-align:right"> '
-						                       + Aggregate[i]['Result'].toFixed(2) + '</td>');
+						                       + Aggregate[i-1]['Result'].toFixed(2) + '</td>');
 						}}
 						else {
-							$NewRow.append('<td class="rpt_summary"></td>');
+							$NewRow.append('<td class="rpt_summary" style="text-align:right"></td>');
 						}
 					}
 					$(this).nextUntil('.group'+level.toString()).last().after($NewRow);
 					for(var ColIndex in Aggregate){
 						if(Aggregate.hasOwnProperty(ColIndex))
-						Aggregate[ColIndex]['Result'] = 0;
-					}
-				});
+							Aggregate[ColIndex]['Result'] = 0;
+						}
+					});
+			}
 		}
-	}
-	function CheckIfRunningTotalExists()
-	{
+		else{
 
+			$("#reporttable tbody tr:last").eq( 0 ).after(
+							'<tr class="runningtotal"><td>Running Total</td></tr>');
+			$("#reporttable tbody tr").each(function(index) {
+				for(var ColIndex in Aggregate){
+					if(Aggregate.hasOwnProperty(ColIndex)){
+						if(!isNaN($(this).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html())){
+							Aggregate[ColIndex]['Result'] = Aggregate[ColIndex]['Result'] +
+																			parseFloat($(this).find('td:nth-child('+ (parseInt(ColIndex) + 1) +')').html());
+																			console.log(Aggregate[ColIndex]['Result']);
+						}
+					}
+				}
+			});
+			for(var i=2;i<=ColCount;i++){
+				if(Aggregate.hasOwnProperty(i-1)){
+				if(typeof Aggregate[i-1] !== "undefined"){
+					$("#reporttable tbody tr:last").append('<td class="rpt_summary" style="text-align:right"> '
+															 + Aggregate[i-1]['Result'].toFixed(2) + '</td>');
+				}}
+				else {
+					$("#reporttable tbody tr:last").append('<td></td>');
+				}
+			}
+			for(var ColIndex in Aggregate){
+				if(Aggregate.hasOwnProperty(ColIndex))
+				Aggregate[ColIndex]['Result'] = 0;
+			}
+		}
 	}
 	function FormatColumns(){
 		numeral.language('es', {

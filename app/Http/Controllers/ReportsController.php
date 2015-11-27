@@ -121,7 +121,7 @@ class ReportsController extends Controller
         $HeaderCnt = 0;
         $ColumnFormats = array();
         $DotPos = 0;
-        $MaxGroupLevel = $Report->Bi_Report_Details()->get()->max("group_level");
+        $MaxGroupLevel = is_null($Report->Bi_Report_Details()->get()->max("group_level"))?0:$Report->Bi_Report_Details()->get()->max("group_level");
         foreach ($Report->Bi_Report_Details()->get() as $Detail) {
           if(!is_null($Detail->display_column)){
             $ColName = $Detail->display_column;
