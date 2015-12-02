@@ -40,7 +40,6 @@ IF (dates IS NOT NULL) THEN
 END IF;
 
 SET @stmt = CONCAT(@stmt," group by accounting_chart.code;");
-SELECT @stmt;
 PREPARE BalanceGeneralQry FROM @stmt;
 EXECUTE BalanceGeneralQry;
 

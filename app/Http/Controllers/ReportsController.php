@@ -238,6 +238,7 @@ class ReportsController extends Controller
       $isConditionFirst=true;
       $Parser = new PHPSQLParser();
       $ParsedQuery = $Parser->parse($Report->query);
+      $isStoredProc = false;
       if(array_key_exists("WHERE",$ParsedQuery))
         $isConditionFirst = false;
       else {
@@ -251,7 +252,8 @@ class ReportsController extends Controller
         $PatternGroup = "/group by " . $ParsedQuery["GROUP"][0]["base_expr"] . "/i";
       else
         $PatternGroup = "/---/";
-
+      if(!array_key_exists("SELECT",$ParsedQuery))
+        $isStoredProc = true;
       foreach($Filters as $Filter){
         switch ($Filter ["type"]) {
           case "string" :
@@ -288,9 +290,15 @@ class ReportsController extends Controller
           preg_match ( $PatternOrder, $Report->query, $matches, PREG_OFFSET_CAPTURE )) {
   			$index = $matches [0] [1];
   		} else {
-  			$index = strlen ( $sQuery );
+  			$index = strlen ( $Report->query );
   		}
-  		$Query = substr_replace ( $Report->query, $WhereClause . " ", $index, 0 );
+      if(!$isStoredProc)
+  		  $Query = substr_replace ( $Report->query, $WhereClause . " ", $index, 0 );
+      else {
+        $Report->query = str_replace('NULL', '', $Report->query);
+        $index = strpos($Report->query,"(") + 1;
+        $Query = substr_replace ( $Report->query, '" ' . $WhereClause . '"', $index, 0 );
+      }
       $Data = DB::select(DB::raw($Query));
       $Response = array("data"=>$Data,"query"=>$Query);
       return Response::json($Response);
