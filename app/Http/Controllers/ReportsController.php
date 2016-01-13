@@ -173,6 +173,12 @@ class ReportsController extends Controller
             $Headers[$HeaderCnt]["value"] = $Data[0]->$dbColumn;
             $HeaderCnt++;
           }
+          if(!is_null($Detail->is_footer) && $Detail->is_footer){
+            $Footers[$FooterCnt]["name"] = $ColName;
+            $dbColumn = $Detail->name_column;
+            $Footers[$FooterCnt]["value"] = $Data[0]->$dbColumn;
+            $FooterCnt++;
+          }
           if(DataTypes::getLabel($Detail->format_column)=="CURRENCY"){
             $ColumnFormats[$ColName] = "CURRENCY";
           }
