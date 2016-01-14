@@ -17,7 +17,7 @@
 1. Escribir el script del nuevo reporte y asegurarle que esta trayendo resultados correctos.
 2. Luego llenar los datos en la tabla bi_reportes en el base de datos de cognitivo. Por ejemplo
 
-![Alt text](/public/images/captura.png?raw=true "bi_reportes")
+![Alt text](../public/images/captura.png?raw=true "bi_reportes")
 
 	en la tabla mencionada arriba:
 	id_bi_report : autoincrement primary key.
@@ -27,7 +27,7 @@
 	query: el script para traer los datos de reporte.
 3. llenar los detalles del reporte en la tabla bi_report_detail en el base de datos de cognitivo. Por ejemplo
 
-![Alt text](/public/images/captura1.png?raw=true "bi_reportes_detail")
+![Alt text](../public/images/captura1.png?raw=true "bi_reportes_detail")
 
 	en la tabla mencionada arriba:
 	id_bi_report_detail: auto-increment primary key.
